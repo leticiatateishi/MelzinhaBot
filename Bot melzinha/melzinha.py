@@ -5,18 +5,20 @@
 import telebot
 import random
 import time
-from datetime import datetime, date
+import threading
+from datetime import datetime, date, timedelta
 from telebot import types
 
 inscritos = []
 
-bot = telebot.TeleBot("845551679:AAGL_ksuJ30URFrFS_amf3r0-hNmma0VWCk")
+bot = telebot.TeleBot("TOKEN")
 
 @bot.message_handler(commands=['mel'])
 def mandar_foto(message):
 	endereco = 'melzinha/' + str(random.randint(1, 64)) + '.jpg'
 	foto = open(endereco, 'rb')
 	bot.send_photo(message.chat.id, foto)
+
 
 @bot.message_handler(commands=['inscrever'])
 def inscrever(message):
@@ -29,6 +31,7 @@ def inscrever(message):
 	msg = 'Inscrição feita. Você deve receber uma foto da Mel todo dia!! Parabéns!!!'
 	bot.send_message(message.chat.id, msg)
 
+
 @bot.message_handler(commands=['cancelar_inscricao'])
 def cancelar(message):
 	if message.chat.id in inscritos:
@@ -37,15 +40,30 @@ def cancelar(message):
 		bot.send_message(message.chat.id, msg)
 
 
-bot.polling()
-# def main():
-# 	while True:
-# 		tempo = datetime.now()
-# 		if (tempo.hour == 21):
-# 			for pessoa in inscritos:
-# 				endereco = 'melzinha/' + str(random.randint(1, 63)) + '.jpg'
-# 				foto = open(endereco, 'rb')
-# 				bot.send_photo(pessoa, foto)
+def processar_inscricoes():
+	for inscrito in inscritos:
+		endereco = 'melzinha/' + str(random.randint(1, 64)) + '.jpg'
+		foto = open(endereco, 'rb')
+		bot.send_photo(inscrito, foto)
 
-# if __name__ == "__main__":
-# 	main()
+
+def inicia_cronometro():
+	global sub_timer
+	horario = datetime.now()
+	proximo = horario.replace(hour = 13, minute = 26)
+
+
+	delta = proximo.timestamp() - horario.timestamp()
+	for inscrito in inscritos:
+		msg = 'delta = ' + delta + 'segundos'
+		bot.send_message(inscrito, msg)
+	sub_timer = threading.Timer(delta, processar_inscricoes)
+	sub_timer.start()
+
+
+def main():
+	inicia_cronometro()
+	bot.polling()
+
+if __name__ == "__main__":
+	main()
