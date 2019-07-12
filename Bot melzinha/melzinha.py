@@ -50,13 +50,12 @@ def processar_inscricoes():
 def inicia_cronometro():
 	global sub_timer
 	horario = datetime.now()
-	proximo = horario.replace(hour = 13, minute = 26)
+	proximo = horario.replace(hour = 9, minute = 0)
 
+	if (horario.hour >= 9):
+		proximo = proximo + timedelta(days = 1)
 
 	delta = proximo.timestamp() - horario.timestamp()
-	for inscrito in inscritos:
-		msg = 'delta = ' + delta + 'segundos'
-		bot.send_message(inscrito, msg)
 	sub_timer = threading.Timer(delta, processar_inscricoes)
 	sub_timer.start()
 
