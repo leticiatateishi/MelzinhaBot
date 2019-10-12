@@ -4,7 +4,6 @@
 # encoding: iso-8859-1
 # encoding: win-1252
 
-import telegram
 import logging
 import json
 from telegram.ext import Updater
@@ -23,7 +22,7 @@ if __name__ == "__main__":
 		configuracao = json.load(arquivo)
 
 	# Com o token, registramos o bot
-	bot = telegram.Bot(token='845551679:AAHJtCYhmzAfp4T1PA4Kqcc8iVfpADyCnYA')
+	bot = telegram.Bot(token='token')
 
 	def salvar_configuracao():
 		"""Salva a configuração do bot no arquivo."""
@@ -35,7 +34,7 @@ if __name__ == "__main__":
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-updater = Updater(token='845551679:AAHJtCYhmzAfp4T1PA4Kqcc8iVfpADyCnYA', use_context=True)
+updater = Updater(token='token', use_context=True)
 dispatcher = updater.dispatcher
 
 def start(update, context):
