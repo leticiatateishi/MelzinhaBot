@@ -94,7 +94,13 @@ def cancelar_inscricao(update, context):
 
 
 # Na thread inicial, configuramos e aguardamos as respostas do bot
-def main(token):
+if __name__ == "__main__":
+	# Abrimos o arquivo de configuração como leitura
+	with open(caminho_configuracao, mode='rt', encoding='utf-8') as arquivo:
+		# Carregamos o JSON a partir do arquivo
+		configuracao = json.load(arquivo)
+
+	token = configuracao['token']
 	updater = Updater(token, use_context=True)
 	bot = Bot(token=token)
 	dispatcher = updater.dispatcher
@@ -112,12 +118,3 @@ def main(token):
 	# SIGTERM or SIGABRT. This should be used most of the time, since
 	# start_polling() is non-blocking and will stop the bot gracefully.
 	updater.idle()
-
-# Na thread inicial, executamos 'main()'
-if __name__ == "__main__":
-	# Abrimos o arquivo de configuração como leitura
-	with open(caminho_configuracao, mode='rt', encoding='utf-8') as arquivo:
-		# Carregamos o JSON a partir do arquivo
-		configuracao = json.load(arquivo)
-
-	main(configuracao['token'])
