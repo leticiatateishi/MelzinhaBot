@@ -4,7 +4,7 @@
 # encoding: iso-8859-1
 # encoding: win-1252
 
-import telegram
+from telegram import Bot
 import logging
 import json
 from telegram.ext import Updater
@@ -94,8 +94,9 @@ def cancelar_inscricao(update, context):
 
 
 # Na thread inicial, configuramos e aguardamos as respostas do bot
-def main():
-	updater = Updater("TOKEN", use_context=True)
+def main(token):
+	updater = Updater(token, use_context=True)
+	bot = Bot(token=token)
 	dispatcher = updater.dispatcher
 
 	dispatcher.add_handler(CommandHandler("start", start))
@@ -114,12 +115,9 @@ def main():
 
 # Na thread inicial, executamos 'main()'
 if __name__ == "__main__":
-
-	bot = telegram.Bot(token="TOKEN")
-
 	# Abrimos o arquivo de configuração como leitura
 	with open(caminho_configuracao, mode='rt', encoding='utf-8') as arquivo:
 		# Carregamos o JSON a partir do arquivo
 		configuracao = json.load(arquivo)
 
-	main()
+	main(configuracao['token'])
