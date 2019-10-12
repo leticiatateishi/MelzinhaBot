@@ -14,6 +14,7 @@ import time
 import threading
 import glob
 import json
+from datetime import time
 
 """Caminho do arquivo de configuração do tipo JSON."""
 caminho_configuracao = 'config.json'
@@ -92,6 +93,14 @@ def cancelar_inscricao(update, context):
 	msg = 'Inscrição cancelada. Mas a Mel ainda te ama.'
 	update.message.reply_text(msg)
 
+def processar_inscricoes(context):
+	"""Envia uma foto aleatória da pasta configurada de fotos a cada chat inscrito."""
+	# Para cada chat...
+	print('Enviando mensagem às', len(configuracao['inscritas']), 'conversas inscritas.')
+	for inscrito in configuracao['inscritas']:
+		# ... o enviamos uma foto aleatória
+		foto = open(pegar_arquivo_aleatorio(), 'rb')
+		bot.send_photo(inscrito, foto)
 
 # Na thread inicial, configuramos e aguardamos as respostas do bot
 if __name__ == "__main__":
@@ -104,6 +113,10 @@ if __name__ == "__main__":
 	updater = Updater(token, use_context=True)
 	bot = Bot(token=token)
 	dispatcher = updater.dispatcher
+	jobqueue = updater.job_queue
+
+	horario = time(12, 0, 0)
+	job_daily = jobqueue.run_daily(processar_inscricoes, horario)
 
 	dispatcher.add_handler(CommandHandler("start", start))
 	dispatcher.add_handler(CommandHandler("help", help))
