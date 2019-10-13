@@ -1,77 +1,32 @@
+# Letícia Mayumi A. Tateishi
+
 # encoding: utf-8
 # encoding: iso-8859-1
 # encoding: win-1252
 
-import telebot
-import random
-import time
-import threading
-import glob
+from telegram import Bot
+from telegram.ext import Updater
+from telegram.ext import CommandHandler, MessageHandler, Filters
+
 import json
-from datetime import datetime, date, timedelta
-from telebot import types
+import time
+import glob
+import random
+import logging
+import threading
+
+from datetime import time
 
 
 """Caminho do arquivo de configuração do tipo JSON."""
 caminho_configuracao = 'config.json'
 
-
-# Na thread inicial, configuramos e aguardamos as respostas do bot
-if __name__ == "__main__":
-	# Abrimos o arquivo de configuração como leitura
-	with open(caminho_configuracao, mode='rt', encoding='utf-8') as arquivo:
-		# Carregamos o JSON a partir do arquivo
-		configuracao = json.load(arquivo)
-
-	# Com o token, registramos o bot
-	bot = telebot.TeleBot(configuracao['token'])
-
-
-	def salvar_configuracao():
-		"""Salva a configuração do bot no arquivo."""
-		with open(caminho_configuracao, mode='wt', encoding='utf-8') as arquivo:
-			json.dump(configuracao, arquivo, indent='\t')
-
-
-	# Registramos os handlers
-
-	@bot.message_handler(commands=['mel'])
-	def mandar_foto(message):
-		"""Envia uma foto aleatória ao receber o comando '/mel' no Telegram."""
-		foto = open(pegar_arquivo_aleatorio(), 'rb')
-		bot.send_photo(message.chat.id, foto)
-
-
-	@bot.message_handler(commands=['inscrever'])
-	def inscrever(message):
-		"""Confere se o chat que enviou o comando '/inscrever' está inscrito e o inscreve se necessário."""
-		# Conferimos se já é inscrito
-		if message.chat.id in configuracao['inscritas']:
-			msg = 'Essa conversa já está inscrita e deve receber uma linda foto da Mel todo dia <3'
-			bot.send_message(message.chat.id, msg)
-			return
-
-		# Se não é, inscrevemos o ID e salvamos o JSON
-		configuracao['inscritas'].append(message.chat.id)
-		salvar_configuracao()
-		msg = 'Inscrição feita. Essa conversa deve receber uma foto da Mel todo dia!! Parabéns!!!'
-		bot.send_message(message.chat.id, msg)
-
-
-	@bot.message_handler(commands=['cancelar_inscricao'])
-	def cancelar(message):
-		"""Confere se o chat que enviou o comando '/cancelar_inscricao' está inscrito e o desinscreve se necessário."""
-		# Conferimos se o chat não está inscrito
-		if message.chat.id not in configuracao['inscritas']:
-			msg = 'Você precisa se inscrever primeiro!! Veja mais a Melzinha!'
-			bot.send_message(message.chat.id, msg)
-			return
-
-		# Se usuário foi inscrito, removemos e salvamos o JSON
-		configuracao['inscritas'].remove(message.chat.id)
-		salvar_configuracao()
-		msg = 'Inscrição cancelada. Mas a Mel ainda te ama.'
-		bot.send_message(message.chat.id, msg)
+def salvar_configuracao():
+	"""Salva """
+	# Abrimos o arquivo de configuração com escrita
+	with open(caminho_configuracao, mode='wt', encoding='utf-8') as arquivo:
+		# Salvamos o arquivo de configuração JSON
+		json.dump(configuracao, arquivo, indent='\t')
 
 
 def pegar_arquivo_aleatorio():
@@ -82,37 +37,104 @@ def pegar_arquivo_aleatorio():
 	return random.choice(enderecos)
 
 
-def processar_inscricoes():
+def help(update, context):
+	"""Envia uma mensagem quando usuário utiliza /help."""
+	# Enviamos mensagem de ajuda
+	update.message.reply_text(
+		"""A melzinha pode te enviar uma foto diariamente se você se inscrever.
+
+		Pode utilizar /inscrever para isso e
+		/cancelar_inscricao para infelizmente parar de receber as fotos.
+
+		Se quiser, ainda tem /mel para receber uma foto aleatória da Mel."""
+	)
+
+
+def mel(update, context):
+	"""Envia uma foto aleatória ao receber o comando '/mel' no Telegram."""
+	# Conferimos se estamos num chat válido (possui chat id)
+	if update.effective_chat is not None:
+		# Abrimos uma foto aleatória
+		foto = open(pegar_arquivo_aleatorio(), 'rb')
+		# Enviamos a foto
+		context.bot.send_photo(update.effective_chat.id, foto)
+
+
+def inscrever(update, context):
+	"""Processamos pedido de inscrição do usuário (comando /inscrever no Telegram)"""
+	# Conferimos se temos chat id
+	if update.effective_chat is None:
+		return
+
+	# Pegamos o chat id do chat
+	chat_id = update.effective_chat.id
+
+	"""Confere se o chat que enviou o comando '/inscrever' está inscrito e o inscreve se necessário."""
+	# Conferimos se já é inscrito
+	if chat_id in configuracao['inscritas']:
+		update.message.reply_text('Essa conversa já está inscrita e deve receber uma linda foto da Mel todo dia <3')
+		return
+
+	# Se não é, inscrevemos o ID e salvamos o JSON
+	configuracao['inscritas'].append(chat_id)
+	salvar_configuracao()
+	update.message.reply_text('Inscrição feita. Essa conversa deve receber uma foto da Mel todo dia!! Parabéns!!!')
+
+
+def cancelar_inscricao(update, context):
+	"""Processamos pedido de cancelamento de inscrição do usuário (comando /cancelar_inscricao no Telegram)"""
+	# Conferimos se temos chat id
+	if update.effective_chat is None:
+		return
+
+	# Conferimos se o chat não está inscrito
+	if chat_id not in configuracao['inscritas']:
+		update.message.reply_text('Você precisa se inscrever primeiro!! Veja mais a Melzinha!')
+		return
+
+	# Se usuário foi inscrito, removemos e salvamos o JSON
+	configuracao['inscritas'].remove(chat_id)
+	salvar_configuracao()
+	update.message.reply_text('Inscrição cancelada. Mas a Mel ainda te ama.')
+
+
+def processar_inscricoes(context):
 	"""Envia uma foto aleatória da pasta configurada de fotos a cada chat inscrito."""
 	# Para cada chat...
 	print('Enviando mensagem às', len(configuracao['inscritas']), 'conversas inscritas.')
 	for inscrito in configuracao['inscritas']:
 		# ... o enviamos uma foto aleatória
 		foto = open(pegar_arquivo_aleatorio(), 'rb')
-		bot.send_photo(inscrito, foto)
-
-	# Reconfiguramos o cronômetro
-	inicia_cronometro()
+		context.bot.send_photo(inscrito, foto)
 
 
-def inicia_cronometro():
-	"""Inicia um cronômetro para executar a função que envia uma foto aleatória para cada chat inscrito."""
-	global sub_timer
-
-	# Calculamos o período de execução
-	delta = timedelta(days = 1)
-
-	# Agendamos para executar a função de enviar uma foto a cada inscrito
-	sub_timer = threading.Timer(delta.total_seconds(), processar_inscricoes)
-	sub_timer.start()
-
-
-def main():
-	"""Inicia o cronômetro para executar a função de mandar fotos aos inscrítos e responde às mensagens."""
-	inicia_cronometro()
-	bot.polling()
-
-
-# Na thread inicial, executamos 'main()'
+# Na thread inicial, configuramos e aguardamos as respostas do bot
 if __name__ == "__main__":
-	main()
+	# Ativamos logging
+	logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+	# Abrimos o arquivo de configuração como leitura
+	with open(caminho_configuracao, mode='rt', encoding='utf-8') as arquivo:
+		# Carregamos o JSON a partir do arquivo
+		configuracao = json.load(arquivo)
+
+	# Iniciamos updater
+	updater = Updater(configuracao['token'], use_context=True)
+
+	# Definimos horário e mostramos imagem diariamente
+	horario = time(12, 0, 0)
+	job_daily = updater.job_queue.run_daily(processar_inscricoes, horario)
+
+	# Adicionamos handler para comandos
+	dispatcher = updater.dispatcher
+	dispatcher.add_handler(CommandHandler("start", help))
+	dispatcher.add_handler(CommandHandler("help", help))
+	dispatcher.add_handler(CommandHandler("mel", mel))
+	dispatcher.add_handler(CommandHandler("inscrever", inscrever))
+	dispatcher.add_handler(CommandHandler("cancelar_inscricao", cancelar_inscricao))
+
+	# Iniciamos o bot
+	updater.start_polling()
+
+	# Idle até Ctrl+C
+	updater.idle()
