@@ -87,6 +87,9 @@ def cancelar_inscricao(update, context):
 	if update.effective_chat is None:
 		return
 
+	# Pegamos o chat id do chat
+	chat_id = update.effective_chat.id
+
 	# Conferimos se o chat não está inscrito
 	if chat_id not in configuracao['inscritas']:
 		update.message.reply_text('Você precisa se inscrever primeiro!! Veja mais a Melzinha!')
